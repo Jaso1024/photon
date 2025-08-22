@@ -10,11 +10,11 @@ networks:
         - subnet: 172.30.0.0/16
 
 services:
-  # Base service for Sunshine (use ARM64 version on Mac Silicon)
+  # Base service for Sunshine (use Xvfb version for ARM64)
   sunshine-base:
     build:
       context: .
-      dockerfile: ${DOCKERFILE:-Dockerfile.sunshine-arm64}
+      dockerfile: ${DOCKERFILE:-Dockerfile.sunshine-xvfb}
     restart: unless-stopped
     networks:
       isolated:

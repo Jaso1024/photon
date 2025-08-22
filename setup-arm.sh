@@ -6,8 +6,8 @@ set -euo pipefail
 echo "=== Setting up ARM64 Isolated Sunshine Instances ==="
 echo
 
-# Force ARM64 version for Mac Silicon
-export DOCKERFILE="Dockerfile.sunshine-arm64"
+# Force Xvfb version for ARM64
+export DOCKERFILE="Dockerfile.sunshine-xvfb"
 
 # Create config directories
 mkdir -p sunshine-config/pc1

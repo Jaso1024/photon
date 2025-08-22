@@ -1,0 +1,47 @@
+# ARM64-compatible Sunshine container with Docker base image
+FROM moonlight-embedded:base
+
+LABEL maintainer="Photon Project"
+LABEL description="ARM64-compatible Sunshine for Photon project"
+
+# Create user
+RUN useradd -m -s /bin/bash sunshine && \
+    mkdir -p /home/sunshine/.config/sunshine && \
+    chown -R sunshine:sunshine /home/sunshine
+
+# Set up configuration
+USER sunshine
+WORKDIR /home/sunshine
+
+# Configure Sunshine - disable updates, telemetry, etc.
+RUN echo "origin_web_ui_allowed = false" >> ~/.config/sunshine/sunshine.conf && \
+    echo "upnp = false" >> ~/.config/sunshine/sunshine.conf && \
+    echo "autoUpdateCheck = false" >> ~/.config/sunshine/sunshine.conf && \
+    echo "external_ip = \"\"" >> ~/.config/sunshine/sunshine.conf && \
+    echo "cmd_args = []" >> ~/.config/sunshine/sunshine.conf
+
+# Create a virtual screen that works on headless systems
+RUN echo "adapter_name = Virtual" >> ~/.config/sunshine/sunshine.conf && \
+    echo "encoder = x264" >> ~/.config/sunshine/sunshine.conf && \
+    echo "resolution = 1920x1080" >> ~/.config/sunshine/sunshine.conf && \
+    echo "fps = 60" >> ~/.config/sunshine/sunshine.conf
+
+# Start script
+RUN echo '#!/bin/bash\n\
+echo "Photon Network-Isolated Sunshine (ARM64)"\n\
+echo "Starting Sunshine in virtual display mode..."\n\
+echo "Network isolation: ENABLED - No internet access"\n\
+\n\
+# Start a virtual X server\n\
+Xvfb :0 -screen 0 1920x1080x24 &\n\
+export DISPLAY=:0\n\
+\n\
+# Start Sunshine\n\
+sunshine\n\
+' > /home/sunshine/start.sh && \
+    chmod +x /home/sunshine/start.sh
+
+# Expose ports
+EXPOSE 47984/tcp 47989/tcp 47990/tcp 48010/tcp
+
+CMD ["/home/sunshine/start.sh"]

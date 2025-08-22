@@ -1,0 +1,66 @@
+# ARM64-compatible Sunshine container with Xvfb for headless operation
+FROM ubuntu:22.04
+
+# Install Sunshine using the official Debian packages
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common \
+    xvfb \
+    x11-xserver-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Sunshine repository and install
+RUN wget -qO- https://apt.lizardbyte.dev/gpg.key | gpg --dearmor -o /usr/share/keyrings/lizardbyte.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/lizardbyte.gpg] https://apt.lizardbyte.dev $(. /etc/os-release && echo $VERSION_CODENAME) main" | tee /etc/apt/sources.list.d/lizardbyte.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y sunshine && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create user
+RUN useradd -m -s /bin/bash sunshine && \
+    mkdir -p /home/sunshine/.config/sunshine && \
+    chown -R sunshine:sunshine /home/sunshine
+
+# Set up configuration
+USER sunshine
+WORKDIR /home/sunshine
+
+# Configure Sunshine - disable updates, telemetry, etc.
+RUN echo "origin_web_ui_allowed = false" >> ~/.config/sunshine/sunshine.conf && \
+    echo "upnp = false" >> ~/.config/sunshine/sunshine.conf && \
+    echo "autoUpdateCheck = false" >> ~/.config/sunshine/sunshine.conf && \
+    echo "external_ip = \"\"" >> ~/.config/sunshine/sunshine.conf && \
+    echo "cmd_args = []" >> ~/.config/sunshine/sunshine.conf
+
+# Create a virtual screen that works on headless systems
+RUN echo "adapter_name = Virtual" >> ~/.config/sunshine/sunshine.conf && \
+    echo "encoder = software" >> ~/.config/sunshine/sunshine.conf && \
+    echo "resolution = 1920x1080" >> ~/.config/sunshine/sunshine.conf && \
+    echo "fps = 30" >> ~/.config/sunshine/sunshine.conf
+
+# Start script
+RUN echo '#!/bin/bash\n\
+echo "Photon Network-Isolated Sunshine with Xvfb"\n\
+echo "Starting Sunshine in virtual display mode..."\n\
+echo "Network isolation: ENABLED - No internet access"\n\
+\n\
+# Start a virtual X server\n\
+Xvfb :0 -screen 0 1920x1080x24 &\n\
+export DISPLAY=:0\n\
+\n\
+# Start a simple window manager\n\
+sleep 2\n\
+\n\
+# Start Sunshine\n\
+sunshine\n\
+' > /home/sunshine/start.sh && \
+    chmod +x /home/sunshine/start.sh
+
+# Expose ports
+EXPOSE 47984/tcp 47989/tcp 47990/tcp 48010/tcp
+
+CMD ["/home/sunshine/start.sh"]

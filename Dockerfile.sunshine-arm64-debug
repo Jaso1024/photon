@@ -1,0 +1,125 @@
+# ARM64-compatible Sunshine container with debug output
+FROM ubuntu:22.04
+
+# Ensure we're running on ARM64
+RUN if [ "$(uname -m)" != "aarch64" ]; then echo "This Dockerfile must be built on ARM64" && exit 1; fi
+
+# Step 1: Install minimal dependencies first and verify
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Step 2: Create a non-root user
+RUN useradd -m -s /bin/bash sunshine && \
+    mkdir -p /home/sunshine/debug
+
+# Step 3: Clone Sunshine
+RUN git clone https://github.com/LizardByte/Sunshine.git /sunshine
+
+# Step 4: Install required dependencies
+RUN apt-get update && apt-get install -y \
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libboost-filesystem-dev \
+    libboost-thread-dev \
+    libboost-log-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libopus-dev \
+    libpulse-dev \
+    libx11-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Step 5: Install a minimal subset of dependencies for a headless build
+WORKDIR /sunshine
+
+# Debug: Print information about the clone
+RUN echo "Git commit:" > /home/sunshine/debug/git-info.txt && \
+    git rev-parse HEAD >> /home/sunshine/debug/git-info.txt && \
+    echo "Branches:" >> /home/sunshine/debug/git-info.txt && \
+    git branch -a >> /home/sunshine/debug/git-info.txt && \
+    echo "Submodules:" >> /home/sunshine/debug/git-info.txt && \
+    git submodule status >> /home/sunshine/debug/git-info.txt && \
+    ls -la >> /home/sunshine/debug/repo-files.txt
+
+# Step 6: Initialize and update submodules manually
+RUN git submodule update --init --recursive
+
+# Step 7: Try to build with minimal features enabled
+RUN mkdir -p build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release \
+          -DSUNSHINE_ENABLE_WAYLAND=OFF \
+          -DSUNSHINE_ENABLE_X11=OFF \
+          -DSUNSHINE_ENABLE_DRM=OFF \
+          -DSUNSHINE_ENABLE_CUDA=OFF \
+          -DSUNSHINE_ENABLE_NVENC=OFF \
+          -DSUNSHINE_ENABLE_NVFBC=OFF \
+          -DSUNSHINE_ENABLE_VAAPI=OFF \
+          -DSUNSHINE_ENABLE_EVDEV=OFF \
+          -DSUNSHINE_ENABLE_UDEV=OFF \
+          -DSUNSHINE_ENABLE_PULSE=OFF \
+          -DSUNSHINE_ENABLE_LIBCAP=OFF \
+          -DSUNSHINE_ENABLE_AVAHI=OFF \
+          -DSUNSHINE_ENABLE_UPNP=OFF \
+          -DSUNSHINE_ENABLE_WORKAROUNDS=OFF \
+          -DSUNSHINE_ENABLE_WS_HTTP=OFF \
+          -DSUNSHINE_ENABLE_SYSTEMD=OFF \
+          -DSUNSHINE_ASSETS_DIR=/sunshine/assets \
+          -DSUNSHINE_EXECUTABLE_PATH=/usr/local/bin/sunshine \
+          .. | tee /home/sunshine/debug/cmake-output.txt || cat /home/sunshine/debug/cmake-output.txt
+
+# Step 8: Build with make, capturing output
+RUN cd build && \
+    make -j$(nproc) | tee /home/sunshine/debug/make-output.txt || cat /home/sunshine/debug/make-output.txt
+
+# Step 9: Check if sunshine binary was created and copy it
+RUN if [ -f "/sunshine/build/sunshine" ]; then \
+        cp /sunshine/build/sunshine /usr/local/bin/ && \
+        chmod +x /usr/local/bin/sunshine && \
+        echo "Binary successfully built and copied" > /home/sunshine/debug/build-success.txt; \
+    else \
+        echo "Failed to build sunshine binary" > /home/sunshine/debug/build-failure.txt; \
+    fi
+
+# Step 10: Create assets directory
+RUN mkdir -p /sunshine/assets && \
+    cp -r /sunshine/src_assets/common/assets/* /sunshine/assets/ 2>/dev/null || \
+    echo "Failed to copy assets" > /home/sunshine/debug/assets-failure.txt
+
+# Step 11: Set up configuration directory
+USER sunshine
+WORKDIR /home/sunshine
+
+RUN mkdir -p /home/sunshine/.config/sunshine
+
+# Step 12: Create startup script with better error handling
+RUN echo '#!/bin/bash\n\
+echo "Sunshine ARM64 Debug Container"\n\
+echo "Starting Sunshine..."\n\
+SUNSHINE_BIN="/usr/local/bin/sunshine"\n\
+\n\
+if [ ! -f "$SUNSHINE_BIN" ]; then\n\
+  echo "ERROR: Sunshine binary not found at $SUNSHINE_BIN"\n\
+  echo "Debug info:"\n\
+  cat /home/sunshine/debug/*\n\
+  exit 1\n\
+fi\n\
+\n\
+# Try to run with debug output\n\
+$SUNSHINE_BIN --sunshine.conf /home/sunshine/.config/sunshine/sunshine.conf --cmd 2>&1\n\
+' > /home/sunshine/start.sh && \
+    chmod +x /home/sunshine/start.sh
+
+# Expose ports that Sunshine needs
+EXPOSE 47984/tcp 47989/tcp 47990/tcp 48010/tcp
+EXPOSE 47998/udp 47999/udp 48000/udp 48002/udp 48010/udp
+
+# Start the sunshine server
+CMD ["/home/sunshine/start.sh"]

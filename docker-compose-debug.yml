@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  # Test container for debugging ARM64 build
+  sunshine-debug:
+    build:
+      context: .
+      dockerfile: Dockerfile.sunshine-arm64-debug
+    container_name: sunshine-debug
+    hostname: sunshine-debug
+    volumes:
+      - ./debug-output:/home/sunshine/debug-output
+    tty: true
+    stdin_open: true

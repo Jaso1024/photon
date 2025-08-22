@@ -1,0 +1,15 @@
+# Minimal test setup
+services:
+  sunshine-minimal:
+    build:
+      context: .
+      dockerfile: Dockerfile.sunshine-arm64-minimal
+    container_name: sunshine-minimal
+    hostname: sunshine-minimal
+    ports:
+      - "47984:47984/tcp"
+      - "47989:47989/tcp"
+      - "47990:47990/tcp"
+      - "48010:48010/udp"
+    tty: true
+    stdin_open: true
