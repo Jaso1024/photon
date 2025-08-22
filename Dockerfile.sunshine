@@ -6,7 +6,6 @@ RUN apt-get update && apt-get install -y \
     wget \
     git \
     build-essential \
-    cmake \
     libssl-dev \
     libavdevice-dev \
     libboost-all-dev \
@@ -27,6 +26,21 @@ RUN apt-get update && apt-get install -y \
     nvidia-cuda-toolkit \
     && rm -rf /var/lib/apt/lists/*
 
+# Install newer CMake (3.28) - detect architecture
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        CMAKE_ARCH="x86_64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        CMAKE_ARCH="aarch64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    wget https://github.com/Kitware/CMake/releases/download/v3.28.1/cmake-3.28.1-linux-${CMAKE_ARCH}.sh && \
+    chmod +x cmake-3.28.1-linux-${CMAKE_ARCH}.sh && \
+    ./cmake-3.28.1-linux-${CMAKE_ARCH}.sh --skip-license --prefix=/usr/local && \
+    rm cmake-3.28.1-linux-${CMAKE_ARCH}.sh && \
+    export PATH=/usr/local/bin:$PATH
+
 # Clone Sunshine with submodules
 RUN git clone --recursive https://github.com/LizardByte/Sunshine.git /sunshine
 
@@ -37,8 +51,9 @@ COPY patches/sunshine-security.patch /tmp/
 RUN cd /sunshine && patch -p1 < /tmp/sunshine-security.patch || true
 
 # Build Sunshine
-RUN mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release \
+RUN export PATH=/usr/local/bin:$PATH && \
+    mkdir build && cd build && \
+    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release \
           -DSUNSHINE_ENABLE_WAYLAND=ON \
           -DSUNSHINE_ENABLE_X11=ON \
           -DSUNSHINE_ENABLE_DRM=ON \

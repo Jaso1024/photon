@@ -34,6 +34,10 @@ cd photon
 
 # For build issues: Use simplified version
 docker-compose -f docker-compose-simple.yml up -d
+
+# Alternative: Use pre-built Sunshine (faster, no compilation):
+docker build -f Dockerfile.sunshine-simple -t photon-sunshine-simple .
+docker run -d --name sunshine-test photon-sunshine-simple
 ```
 
 ### 2. Configure Remote PCs
