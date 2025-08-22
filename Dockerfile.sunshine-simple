@@ -4,6 +4,7 @@ FROM ubuntu:22.04
 # Install minimal dependencies
 RUN apt-get update && apt-get install -y \
     wget \
+    libfuse2 \
     libcap2 \
     libpulse0 \
     libopus0 \
@@ -18,8 +19,8 @@ RUN apt-get update && apt-get install -y \
     x11-xserver-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Download Sunshine AppImage
-RUN wget https://github.com/LizardByte/Sunshine/releases/download/v0.21.0/sunshine-ubuntu-22.04-amd64.AppImage -O /usr/local/bin/sunshine && \
+# Download Sunshine AppImage (latest release)
+RUN wget https://github.com/LizardByte/Sunshine/releases/download/v2025.628.4510/sunshine.AppImage -O /usr/local/bin/sunshine && \
     chmod +x /usr/local/bin/sunshine
 
 # Create non-root user
