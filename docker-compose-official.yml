@@ -1,0 +1,30 @@
+version: '3.8'
+
+# Use official Sunshine image - much simpler!
+services:
+  sunshine:
+    image: lizardbyte/sunshine:latest
+    container_name: sunshine-official
+    restart: unless-stopped
+    ports:
+      - "47984:47984/tcp"
+      - "47989:47989/tcp"
+      - "47990:47990/tcp"
+      - "48010:48010/tcp"
+      - "47998:47998/udp"
+      - "47999:47999/udp"
+      - "48000:48000/udp"
+      - "48002:48002/udp"
+      - "48010:48010/udp"
+    volumes:
+      - ./sunshine/config:/config
+      - ./sunshine/apps.json:/config/apps.json
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    devices:
+      - /dev/dri:/dev/dri  # GPU access
+    cap_add:
+      - SYS_ADMIN  # Required for input
+    network_mode: host  # Required for proper discovery
