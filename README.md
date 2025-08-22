@@ -11,18 +11,29 @@ Photon enables secure remote control of multiple PCs from a single master interf
 
 ## Quick Start
 
+### Prerequisites for macOS
+
+```bash
+# Install XQuartz for GUI support
+brew install --cask xquartz
+# Logout and login again after installing
+
+# Install Docker Desktop
+brew install --cask docker
+```
+
 ### 1. Setup Master PC
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/photon.git
+git clone https://github.com/Jaso1024/photon.git
 cd photon
 
-# Deploy Photon
-./deploy.sh
+# For macOS users: Use the start script
+./start-photon.sh
 
-# Configure remote PCs (edit docker-compose.yml)
-nano docker-compose.yml
+# For build issues: Use simplified version
+docker-compose -f docker-compose-simple.yml up -d
 ```
 
 ### 2. Configure Remote PCs

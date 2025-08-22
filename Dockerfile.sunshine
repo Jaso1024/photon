@@ -27,10 +27,14 @@ RUN apt-get update && apt-get install -y \
     nvidia-cuda-toolkit \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Sunshine source
-COPY Sunshine /sunshine
+# Clone Sunshine with submodules
+RUN git clone --recursive https://github.com/LizardByte/Sunshine.git /sunshine
 
 WORKDIR /sunshine
+
+# Apply security patches
+COPY patches/sunshine-security.patch /tmp/
+RUN cd /sunshine && patch -p1 < /tmp/sunshine-security.patch || true
 
 # Build Sunshine
 RUN mkdir build && cd build && \

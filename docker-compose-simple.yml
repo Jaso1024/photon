@@ -1,0 +1,42 @@
+# Simplified version for testing
+version: '3.8'
+
+networks:
+  photon-net:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  # Simplified master (no GUI)
+  photon-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.photon-master-simple
+    container_name: photon-master
+    hostname: photon-master
+    networks:
+      photon-net:
+        ipv4_address: 172.20.0.2
+    stdin_open: true
+    tty: true
+    
+  # Base service for all Sunshine instances
+  sunshine-base:
+    build:
+      context: .
+      dockerfile: Dockerfile.sunshine
+    image: photon-sunshine:latest
+    networks:
+      photon-net:
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./patches:/patches:ro
+    restart: unless-stopped
+    
+volumes:
+  sunshine-config:

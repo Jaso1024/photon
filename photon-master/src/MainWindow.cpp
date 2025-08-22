@@ -9,6 +9,7 @@
 #include <QSplitter>
 #include <QGroupBox>
 #include <QMessageBox>
+#include <QStatusBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)

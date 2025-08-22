@@ -1,0 +1,35 @@
+# Simplified Photon Master container for testing
+FROM ubuntu:22.04
+
+# Install basic dependencies and Moonlight
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    git \
+    build-essential \
+    cmake \
+    libssl-dev \
+    libopus-dev \
+    libsdl2-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Moonlight AppImage
+RUN wget https://github.com/moonlight-stream/moonlight-qt/releases/download/v5.0.1/Moonlight-5.0.1-x86_64.AppImage -O /usr/local/bin/moonlight && \
+    chmod +x /usr/local/bin/moonlight
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+echo "Photon Master - Simplified Version"\n\
+echo "Available remote PCs:"\n\
+echo "  PC1: 172.20.0.10"\n\
+echo "  PC2: 172.20.0.11"\n\
+echo "  PC3: 172.20.0.12"\n\
+echo "  PC4: 172.20.0.13"\n\
+echo ""\n\
+echo "Connect with: moonlight stream 172.20.0.X Desktop"\n\
+/bin/bash' > /start.sh && chmod +x /start.sh
+
+CMD ["/start.sh"]

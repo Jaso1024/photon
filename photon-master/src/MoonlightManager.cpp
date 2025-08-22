@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QFile>
 #include <QDebug>
+#include <QCoreApplication>
 
 MoonlightManager::MoonlightManager(QObject *parent)
     : QObject(parent)
@@ -130,6 +131,53 @@ void MoonlightManager::disconnect(int index)
         }
         m_instances.erase(it);
         emit connectionStateChanged(index, false);
+    }
+}
+
+void MoonlightManager::handleProcessError(QProcess::ProcessError error)
+{
+    // Find which instance this process belongs to
+    QProcess *process = qobject_cast<QProcess*>(sender());
+    if (!process) return;
+    
+    for (auto &[index, instance] : m_instances) {
+        if (instance.process.get() == process) {
+            QString errorString;
+            switch (error) {
+                case QProcess::FailedToStart:
+                    errorString = "Failed to start Moonlight";
+                    break;
+                case QProcess::Crashed:
+                    errorString = "Moonlight crashed";
+                    break;
+                case QProcess::Timedout:
+                    errorString = "Connection timed out";
+                    break;
+                default:
+                    errorString = "Unknown error occurred";
+            }
+            emit errorOccurred(index, errorString);
+            break;
+        }
+    }
+}
+
+void MoonlightManager::handleProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    // Find which instance this process belongs to
+    QProcess *process = qobject_cast<QProcess*>(sender());
+    if (!process) return;
+    
+    for (auto &[index, instance] : m_instances) {
+        if (instance.process.get() == process) {
+            instance.connected = false;
+            emit connectionStateChanged(index, false);
+            
+            if (exitStatus == QProcess::CrashExit) {
+                emit errorOccurred(index, "Moonlight crashed unexpectedly");
+            }
+            break;
+        }
     }
 }
 
