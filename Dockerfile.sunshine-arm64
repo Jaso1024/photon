@@ -1,0 +1,84 @@
+# ARM64-compatible Sunshine container (macOS Silicon)
+FROM ubuntu:22.04
+
+# Install dependencies to build Sunshine from source
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libboost-filesystem-dev \
+    libboost-program-options-dev \
+    libboost-log-dev \
+    libboost-thread-dev \
+    libcap-dev \
+    libcurl4-openssl-dev \
+    libdrm-dev \
+    libevdev-dev \
+    libnuma-dev \
+    libopus-dev \
+    libpulse-dev \
+    libssl-dev \
+    libva-dev \
+    libvdpau-dev \
+    libwayland-dev \
+    libx11-dev \
+    libxcb-shm0-dev \
+    libxcb-xfixes0-dev \
+    libxcb1-dev \
+    libxfixes-dev \
+    libxrandr-dev \
+    libxtst-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build Sunshine from source (headless mode)
+RUN git clone --recursive https://github.com/LizardByte/Sunshine.git /sunshine && \
+    cd /sunshine && \
+    mkdir build && \
+    cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release \
+          -DSUNSHINE_ENABLE_WAYLAND=OFF \
+          -DSUNSHINE_ENABLE_X11=OFF \
+          -DSUNSHINE_ENABLE_DRM=OFF \
+          -DSUNSHINE_ENABLE_CUDA=OFF \
+          -DSUNSHINE_ASSETS_DIR=/sunshine/assets \
+          .. && \
+    make -j$(nproc) && \
+    cp sunshine /usr/local/bin/ && \
+    mkdir -p /sunshine/assets && \
+    cp -r /sunshine/src_assets/common/assets/* /sunshine/assets/
+
+# Create non-root user
+RUN useradd -m -s /bin/bash sunshine && \
+    mkdir -p /home/sunshine/.config/sunshine && \
+    chown -R sunshine:sunshine /home/sunshine /sunshine
+
+# Security: Disable update checks and telemetry
+RUN echo "autoUpdateCheck = false" >> /home/sunshine/.config/sunshine/sunshine.conf && \
+    echo "external_ip = \"\"" >> /home/sunshine/.config/sunshine/sunshine.conf && \
+    echo "origin_web_ui_allowed = false" >> /home/sunshine/.config/sunshine/sunshine.conf && \
+    echo "upnp = false" >> /home/sunshine/.config/sunshine/sunshine.conf && \
+    echo "cmd_args = []" >> /home/sunshine/.config/sunshine/sunshine.conf
+
+# Switch to non-root user
+USER sunshine
+WORKDIR /home/sunshine
+
+# Simple startup script
+RUN echo '#!/bin/bash\n\
+echo "Sunshine ARM64 Container"\n\
+echo "Starting Sunshine..."\n\
+/usr/local/bin/sunshine --sunshine.conf /home/sunshine/.config/sunshine/sunshine.conf\n\
+' > /home/sunshine/start.sh && \
+chmod +x /home/sunshine/start.sh
+
+# These are the ports Sunshine needs
+EXPOSE 47984/tcp 47989/tcp 47990/tcp 48010/tcp
+EXPOSE 47998/udp 47999/udp 48000/udp 48002/udp 48010/udp
+
+CMD ["/home/sunshine/start.sh"]

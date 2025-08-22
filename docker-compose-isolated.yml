@@ -10,11 +10,11 @@ networks:
         - subnet: 172.30.0.0/16
 
 services:
-  # Base service for Sunshine
+  # Base service for Sunshine (use ARM64 version on Mac Silicon)
   sunshine-base:
     build:
       context: .
-      dockerfile: Dockerfile.sunshine-simple
+      dockerfile: ${DOCKERFILE:-Dockerfile.sunshine-arm64}
     restart: unless-stopped
     networks:
       isolated:
@@ -66,7 +66,11 @@ services:
     image: alpine:latest
     container_name: network-bridge
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "47984:47984/tcp"
+      - "47989:47989/tcp"
+      - "47990:47990/tcp"
+      - "48010:48010/udp"
     cap_add:
       - NET_ADMIN
     command: |
