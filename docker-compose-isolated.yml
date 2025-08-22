@@ -1,0 +1,91 @@
+version: '3.8'
+
+# Network isolation - NO internet access
+networks:
+  isolated:
+    driver: bridge
+    internal: true  # This blocks ALL external access
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+services:
+  # Base service for Sunshine
+  sunshine-base:
+    build:
+      context: .
+      dockerfile: Dockerfile.sunshine-simple
+    restart: unless-stopped
+    networks:
+      isolated:
+    environment:
+      - PUID=1000
+      - PGID=1000
+    security_opt:
+      - no-new-privileges:true
+    
+  # PC 1
+  pc1:
+    extends:
+      service: sunshine-base
+    container_name: isolated-pc1
+    hostname: pc1
+    networks:
+      isolated:
+        ipv4_address: 172.30.0.10
+    volumes:
+      - ./sunshine-config/pc1:/home/sunshine/.config/sunshine
+    
+  # PC 2
+  pc2:
+    extends:
+      service: sunshine-base
+    container_name: isolated-pc2
+    hostname: pc2
+    networks:
+      isolated:
+        ipv4_address: 172.30.0.11
+    volumes:
+      - ./sunshine-config/pc2:/home/sunshine/.config/sunshine
+
+  # PC 3
+  pc3:
+    extends:
+      service: sunshine-base
+    container_name: isolated-pc3
+    hostname: pc3
+    networks:
+      isolated:
+        ipv4_address: 172.30.0.12
+    volumes:
+      - ./sunshine-config/pc3:/home/sunshine/.config/sunshine
+
+# Create the bridge for Moonlight to connect
+# This container can run on the host network but accesses the isolated network
+  network-bridge:
+    image: alpine:latest
+    container_name: network-bridge
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    command: |
+      sh -c "
+        apk add --no-cache iptables socat
+        
+        # Setup port forwarding from host to isolated network
+        socat TCP-LISTEN:47984,fork,reuseaddr TCP:172.30.0.10:47984 &
+        socat TCP-LISTEN:47989,fork,reuseaddr TCP:172.30.0.10:47989 &
+        socat TCP-LISTEN:47990,fork,reuseaddr TCP:172.30.0.10:47990 &
+        socat UDP-LISTEN:48010,fork,reuseaddr UDP:172.30.0.10:48010 &
+        
+        echo 'Network bridge ready. Moonlight on host can connect to isolated Sunshine instances.'
+        echo 'PC1: localhost (default)'
+        echo 'For PC2/PC3: Use port forwarding script'
+        
+        # Keep container running
+        tail -f /dev/null
+      "
+    networks:
+      isolated:
+        ipv4_address: 172.30.0.2

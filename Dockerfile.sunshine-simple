@@ -19,8 +19,8 @@ RUN apt-get update && apt-get install -y \
     x11-xserver-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Download Sunshine AppImage (latest release)
-RUN wget https://github.com/LizardByte/Sunshine/releases/download/v2025.628.4510/sunshine.AppImage -O /usr/local/bin/sunshine && \
+# Download Sunshine AppImage (version 0.20.0 works on x86_64)
+RUN wget https://github.com/LizardByte/Sunshine/releases/download/v0.20.0/sunshine.AppImage -O /usr/local/bin/sunshine && \
     chmod +x /usr/local/bin/sunshine
 
 # Create non-root user
