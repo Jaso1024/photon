@@ -1,0 +1,68 @@
+diff --git a/src_assets/common/assets/web/index.html b/src_assets/common/assets/web/index.html
+index 1234567..7890123 100644
+--- a/src_assets/common/assets/web/index.html
++++ b/src_assets/common/assets/web/index.html
+@@ -102,9 +102,11 @@
+         this.notifyPreReleases = config.notify_pre_releases;
+         this.version = new SunshineVersion(null, config.version);
+         console.log("Version: ", this.version.version)
+-        this.githubVersion = new SunshineVersion(await fetch("https://api.github.com/repos/LizardByte/Sunshine/releases/latest").then((r) => r.json()), null);
++        // PHOTON: Disabled update checks for security
++        // this.githubVersion = new SunshineVersion(await fetch("https://api.github.com/repos/LizardByte/Sunshine/releases/latest").then((r) => r.json()), null);
+         console.log("GitHub Version: ", this.githubVersion.version)
+-        this.preReleaseVersion = new SunshineVersion((await fetch("https://api.github.com/repos/LizardByte/Sunshine/releases").then((r) => r.json())).find(release => release.prerelease), null);
++        // PHOTON: Disabled update checks for security
++        // this.preReleaseVersion = new SunshineVersion((await fetch("https://api.github.com/repos/LizardByte/Sunshine/releases").then((r) => r.json())).find(release => release.prerelease), null);
+         console.log("Pre-Release Version: ", this.preReleaseVersion.version)
+       } catch (e) {
+         console.error(e);
+diff --git a/src/system_tray.cpp b/src/system_tray.cpp
+index 1234567..7890123 100644
+--- a/src/system_tray.cpp
++++ b/src/system_tray.cpp
+@@ -55,15 +55,18 @@
+ 
+   void
+   donate_github() {
+-    platf::open_url("https://github.com/sponsors/LizardByte");
++    // PHOTON: Disabled external URL access for security
++    // platf::open_url("https://github.com/sponsors/LizardByte");
+   }
+ 
+   void
+   donate_patreon() {
+-    platf::open_url("https://www.patreon.com/LizardByte");
++    // PHOTON: Disabled external URL access for security
++    // platf::open_url("https://www.patreon.com/LizardByte");
+   }
+ 
+   void
+   donate_paypal() {
+-    platf::open_url("https://www.paypal.com/paypalme/ReenigneArcher");
++    // PHOTON: Disabled external URL access for security
++    // platf::open_url("https://www.paypal.com/paypalme/ReenigneArcher");
+   }
+diff --git a/src/config.cpp b/src/config.cpp
+index 1234567..7890123 100644
+--- a/src/config.cpp
++++ b/src/config.cpp
+@@ -1015,7 +1015,8 @@
+         config::sunshine.flags[config::flag::FRESH_STATE].flip();
+       }
+       else if (*argv == "--upnp"sv || *argv == "-u"sv) {
+-        config::sunshine.flags[config::flag::UPNP].flip();
++        // PHOTON: Force disable UPnP for security
++        // config::sunshine.flags[config::flag::UPNP].flip();
+       }
+       else if (*argv == "--force-capture"sv || *argv == "-f"sv) {
+         ++argv;
+@@ -1239,7 +1240,8 @@
+       config::sunshine.flags[config::flag::PIN_STDIN].flip();
+     }
+     else if (apply_flags && (arg == "--upnp"sv || arg == "-u"sv)) {
+-      config::sunshine.flags[config::flag::UPNP].flip();
++      // PHOTON: Force disable UPnP for security
++      // config::sunshine.flags[config::flag::UPNP].flip();
+     }
+     else if (apply_flags && (arg == "--force-capture"sv || arg == "-f"sv)) {
+       if (i + 1 < argc) {

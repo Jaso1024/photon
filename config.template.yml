@@ -1,0 +1,94 @@
+# Photon Configuration Template
+# Copy this to config.yml and customize for your setup
+
+master:
+  # Number of remote PCs to control (max 12 for F1-F12 keys)
+  pc_count: 4
+  
+  # Master UI settings
+  ui:
+    resolution: "1920x1080"
+    fullscreen: false
+    theme: "dark"
+
+# Remote PC configurations
+remote_pcs:
+  - name: "Gaming PC"
+    ip: "172.20.0.10"
+    credentials:
+      username: "gamer"
+      password: "changeme"
+    streaming:
+      resolution: "1920x1080"
+      fps: 60
+      bitrate: "50M"
+      codec: "h264"  # or h265/av1
+    
+  - name: "Work PC"
+    ip: "172.20.0.11"
+    credentials:
+      username: "worker"
+      password: "changeme"
+    streaming:
+      resolution: "3840x2160"
+      fps: 30
+      bitrate: "80M"
+      codec: "h265"
+    
+  - name: "Media Server"
+    ip: "172.20.0.12"
+    credentials:
+      username: "media"
+      password: "changeme"
+    streaming:
+      resolution: "1920x1080"
+      fps: 30
+      bitrate: "20M"
+      codec: "h264"
+    
+  - name: "Development"
+    ip: "172.20.0.13"
+    credentials:
+      username: "dev"
+      password: "changeme"
+    streaming:
+      resolution: "2560x1440"
+      fps: 60
+      bitrate: "40M"
+      codec: "h264"
+
+# Security settings
+security:
+  # Certificate validity (days)
+  cert_validity: 365
+  
+  # Pairing timeout (seconds)
+  pairing_timeout: 300
+  
+  # Failed auth attempts before lockout
+  max_auth_attempts: 3
+  
+  # Lockout duration (minutes)
+  lockout_duration: 15
+
+# Network settings
+network:
+  # Docker subnet (don't change unless you know what you're doing)
+  subnet: "172.20.0.0/16"
+  
+  # MTU size (1500 default, 9000 for jumbo frames)
+  mtu: 1500
+  
+  # Enable QoS priority for streaming
+  qos_enabled: true
+
+# Logging
+logging:
+  # Log level: debug, info, warning, error
+  level: "info"
+  
+  # Keep logs for X days
+  retention_days: 7
+  
+  # Log file location (inside container)
+  path: "/photon/logs"

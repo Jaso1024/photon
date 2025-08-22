@@ -1,0 +1,41 @@
+# Photon Master UI container
+FROM ubuntu:22.04
+
+# Install Qt6 and build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    qt6-base-dev \
+    qt6-base-dev-tools \
+    libqt6widgets6 \
+    libqt6network6 \
+    libgl1-mesa-glx \
+    libxkbcommon-x11-0 \
+    libxcb-xinerama0 \
+    libxcb-xinput0 \
+    libxcb-cursor0 \
+    x11-apps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and build Photon Master
+COPY photon-master /photon-master
+WORKDIR /photon-master
+
+RUN mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc)
+
+# Copy Moonlight binary (assuming it's built separately)
+# In production, you'd include Moonlight in the build process
+# COPY --from=moonlight-builder /moonlight-qt/build/app/moonlight /usr/local/bin/moonlight
+
+# Create non-root user
+RUN useradd -m -s /bin/bash photon
+USER photon
+
+# Set up environment
+ENV QT_X11_NO_MITSHM=1
+ENV DISPLAY=:0
+
+WORKDIR /home/photon
+CMD ["/photon-master/build/photon-master"]

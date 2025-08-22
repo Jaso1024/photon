@@ -1,0 +1,59 @@
+# Sunshine container with complete network isolation
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    build-essential \
+    cmake \
+    libssl-dev \
+    libavdevice-dev \
+    libboost-all-dev \
+    libpulse-dev \
+    libopus-dev \
+    libevdev-dev \
+    libwayland-dev \
+    libdrm-dev \
+    libcap-dev \
+    libcurl4-openssl-dev \
+    libx11-dev \
+    libxcb-shm0-dev \
+    libxcb-xfixes0-dev \
+    libxcb1-dev \
+    libxfixes-dev \
+    libxrandr-dev \
+    libxtst-dev \
+    nvidia-cuda-toolkit \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Sunshine source
+COPY Sunshine /sunshine
+
+WORKDIR /sunshine
+
+# Build Sunshine
+RUN mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release \
+          -DSUNSHINE_ENABLE_WAYLAND=ON \
+          -DSUNSHINE_ENABLE_X11=ON \
+          -DSUNSHINE_ENABLE_DRM=ON \
+          -DSUNSHINE_ENABLE_CUDA=ON \
+          .. && \
+    make -j$(nproc)
+
+# Create non-root user
+RUN useradd -m -s /bin/bash sunshine && \
+    chown -R sunshine:sunshine /sunshine
+
+# Security: Drop all capabilities except required ones
+USER sunshine
+
+# Expose only necessary ports (no external binding)
+EXPOSE 47989 47990 47984 47985 47986 47987
+
+# Start script that ensures no external network access
+COPY --chown=sunshine:sunshine docker/start-sunshine.sh /start-sunshine.sh
+RUN chmod +x /start-sunshine.sh
+
+ENTRYPOINT ["/start-sunshine.sh"]

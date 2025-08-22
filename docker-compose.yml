@@ -1,0 +1,124 @@
+version: '3.8'
+
+# Isolated network - no external access
+networks:
+  photon-net:
+    driver: bridge
+    internal: true  # This prevents external network access
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  # Remote PC 1
+  sunshine-pc1:
+    build:
+      context: .
+      dockerfile: Dockerfile.sunshine
+    container_name: photon-pc1
+    hostname: photon-pc1
+    networks:
+      photon-net:
+        ipv4_address: 172.20.0.10
+    environment:
+      - DISPLAY=${DISPLAY}
+      - SUNSHINE_COMPUTER_NAME=PC1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - sunshine-pc1-config:/home/sunshine/.config/sunshine
+    devices:
+      # GPU access (adjust based on your setup)
+      - /dev/dri:/dev/dri
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN  # Required for input capture
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:unconfined  # May be needed for input
+    restart: unless-stopped
+
+  # Remote PC 2
+  sunshine-pc2:
+    build:
+      context: .
+      dockerfile: Dockerfile.sunshine
+    container_name: photon-pc2
+    hostname: photon-pc2
+    networks:
+      photon-net:
+        ipv4_address: 172.20.0.11
+    environment:
+      - DISPLAY=${DISPLAY}
+      - SUNSHINE_COMPUTER_NAME=PC2
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - sunshine-pc2-config:/home/sunshine/.config/sunshine
+    devices:
+      - /dev/dri:/dev/dri
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:unconfined
+    restart: unless-stopped
+
+  # Remote PC 3
+  sunshine-pc3:
+    build:
+      context: .
+      dockerfile: Dockerfile.sunshine
+    container_name: photon-pc3
+    hostname: photon-pc3
+    networks:
+      photon-net:
+        ipv4_address: 172.20.0.12
+    environment:
+      - DISPLAY=${DISPLAY}
+      - SUNSHINE_COMPUTER_NAME=PC3
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - sunshine-pc3-config:/home/sunshine/.config/sunshine
+    devices:
+      - /dev/dri:/dev/dri
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:unconfined
+    restart: unless-stopped
+
+  # Master controller (runs on host network to connect to containers)
+  photon-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.photon-master
+    container_name: photon-master
+    hostname: photon-master
+    network_mode: host  # Needs host network to display UI
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - photon-master-config:/home/photon/.config/photon
+    devices:
+      - /dev/dri:/dev/dri
+    depends_on:
+      - sunshine-pc1
+      - sunshine-pc2
+      - sunshine-pc3
+    restart: unless-stopped
+
+volumes:
+  sunshine-pc1-config:
+  sunshine-pc2-config:
+  sunshine-pc3-config:
+  photon-master-config:
